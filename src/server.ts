@@ -9,9 +9,11 @@ import {
   serializerCompiler,
   validatorCompiler,
 } from "fastify-type-provider-zod";
+import { env } from "./env";
 
 import { productRoutes } from "./routes/product";
 import { categoryRoutes } from "./routes/category";
+import { userRoutes } from "./routes/user";
 
 const app = fastify().withTypeProvider<ZodTypeProvider>();
 
@@ -20,6 +22,10 @@ app.setSerializerCompiler(serializerCompiler);
 
 app.register(cors, {
   origin: "*",
+});
+
+app.register(jwt, {
+  secret: env.SECRET_KEY,
 });
 
 app.register(swagger, {
@@ -36,19 +42,19 @@ app.register(scalar, {
   routePrefix: "/docs",
 });
 
-app.register(jwt, {
-  secret: "your-secret-key",
+app.register(productRoutes, {
+  prefix: "/product",
 });
 
-app.register(productRoutes, {
-  prefix: "/products",
+app.register(userRoutes, {
+  prefix: "/user",
 });
 
 app.register(categoryRoutes, {
-  prefix: "/categories",
+  prefix: "/category",
 });
 
-app.listen({ port: 3000 }, () => {
-  console.log(`Server listening at http://localhost:3000`);
-  console.log(`Docs available at http://localhost:3000/docs`);
+app.listen({ port: env.PORT }, () => {
+  console.log(`Server listening at http://localhost:${env.PORT}`);
+  console.log(`Docs available at http://localhost:${env.PORT}/docs`);
 });

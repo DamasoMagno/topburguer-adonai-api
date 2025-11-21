@@ -7,7 +7,7 @@ import { authenticate } from "../middleware/authenticate";
 export const categoryRoutes: FastifyPluginAsyncZod = async (app) => {
   app.get("/", async (request, reply) => {
     const categories = await prisma.category.findMany();
-    return { categories };
+    return reply.status(200).send({ categories });
   });
 
   app.get(
@@ -33,7 +33,7 @@ export const categoryRoutes: FastifyPluginAsyncZod = async (app) => {
         return;
       }
 
-      return { category };
+      return reply.status(200).send({ category });
     }
   );
 
@@ -56,7 +56,7 @@ export const categoryRoutes: FastifyPluginAsyncZod = async (app) => {
         },
       });
 
-      return { message: "Category created" };
+      return reply.status(201).send();
     }
   );
 
@@ -84,7 +84,7 @@ export const categoryRoutes: FastifyPluginAsyncZod = async (app) => {
         },
       });
 
-      return { message: "Category updated" };
+      return reply.status(204).send();
     }
   );
 
@@ -105,7 +105,7 @@ export const categoryRoutes: FastifyPluginAsyncZod = async (app) => {
         where: { id },
       });
 
-      return { message: "Category deleted" };
+      return reply.status(204).send();
     }
   );
 };

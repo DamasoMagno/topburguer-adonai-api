@@ -29,7 +29,7 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
         return;
       }
 
-      return { product };
+      return reply.status(200).send({ product });
     }
   );
 
@@ -59,7 +59,7 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
         },
       });
 
-      return { message: "Product created" };
+      return reply.status(201).send();
     }
   );
 
@@ -94,7 +94,7 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
         },
       });
 
-      return { message: "Product updated" };
+      return reply.status(204).send();
     }
   );
 
@@ -114,7 +114,7 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
         where: { id },
       });
 
-      return { message: "Product deleted" };
+      return reply.status(204).send();
     }
   );
 };
