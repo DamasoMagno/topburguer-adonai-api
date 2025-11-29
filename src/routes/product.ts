@@ -2,19 +2,73 @@ import z from "zod";
 import { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { prisma } from "../lib/prisma";
 
+const productSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  description: z.string().nullable(),
+  price: z.number(),
+  categoryId: z.number(),
+  imageUrl: z.url().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
 export const productRoutes: FastifyPluginAsyncZod = async (app) => {
-  app.get("/", async (request, reply) => {
-    const products = await prisma.product.findMany();
-    return { products };
-  });
+  app.get(
+    "/",
+    {
+      schema: {
+        querystring: z.object({
+          page: z.coerce.number().min(1).default(1),
+          limit: z.coerce.number().min(1).max(100).default(10),
+        }),
+        response: {
+          200: z.object({
+            // CORREÇÃO 1: z.object envolvendo a resposta
+            products: z.array(productSchema),
+          }),
+        },
+      },
+    },
+    async (request, reply) => {
+      const { page, limit } = request.query;
+
+      const take = limit;
+      const skip = (page - 1) * limit;
+
+      const products = await prisma.product.findMany({
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          price: true,
+          categoryId: true,
+          imageUrl: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        take,
+        skip,
+      });
+
+      return reply.status(200).send({ products });
+    }
+  );
 
   app.get(
     "/:id",
     {
       schema: {
         params: z.object({
-          id: z.string().transform((val) => parseInt(val, 10)),
+          id: z.coerce.number(), // Dica: use z.coerce.number() ao invés de transform manual
         }),
+        response: {
+          200: z.object({
+            // CORREÇÃO 2: z.object envolvendo a resposta
+            product: productSchema, // Usa o schema diretamente
+          }),
+          404: z.object({ message: z.string() }),
+        },
       },
     },
     async (request, reply) => {
@@ -25,8 +79,7 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
       });
 
       if (!product) {
-        reply.status(404).send({ message: "Product not found" });
-        return;
+        return reply.status(404).send({ message: "Product not found" });
       }
 
       return reply.status(200).send({ product });
@@ -42,8 +95,11 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
           description: z.string().optional(),
           price: z.number(),
           category_id: z.number(),
-          imageUrl: z.url(),
+          imageUrl: z.string().url(), // CORREÇÃO 3: z.string().url()
         }),
+        response: {
+          201: z.object({}), // Retorno vazio mas válido
+        },
       },
     },
     async (request, reply) => {
@@ -59,7 +115,7 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
         },
       });
 
-      return reply.status(201).send();
+      return reply.status(201).send({});
     }
   );
 
@@ -68,15 +124,18 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         params: z.object({
-          id: z.string().transform((val) => parseInt(val, 10)),
+          id: z.coerce.number(),
         }),
         body: z.object({
           name: z.string().optional(),
           description: z.string().optional(),
           price: z.number().optional(),
           category_id: z.number().optional(),
-          imageUrl: z.url().optional(),
+          imageUrl: z.string().url().optional(), // CORREÇÃO 3
         }),
+        response: {
+          204: z.object({}),
+        },
       },
     },
     async (request, reply) => {
@@ -94,7 +153,7 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
         },
       });
 
-      return reply.status(204).send();
+      return reply.status(204).send({});
     }
   );
 
@@ -103,8 +162,11 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         params: z.object({
-          id: z.string().transform((val) => parseInt(val, 10)),
+          id: z.coerce.number(),
         }),
+        response: {
+          204: z.object({}),
+        },
       },
     },
     async (request, reply) => {
@@ -114,7 +176,7 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
         where: { id },
       });
 
-      return reply.status(204).send();
+      return reply.status(204).send({});
     }
   );
 };

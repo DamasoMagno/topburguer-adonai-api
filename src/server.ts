@@ -3,11 +3,10 @@ import cors from "@fastify/cors";
 import swagger from "@fastify/swagger";
 import jwt from "@fastify/jwt";
 import scalar from "@scalar/fastify-api-reference";
-import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import {
-  jsonSchemaTransform,
   serializerCompiler,
   validatorCompiler,
+  type ZodTypeProvider,
 } from "fastify-type-provider-zod";
 import { env } from "./env";
 
@@ -35,7 +34,6 @@ app.register(swagger, {
       version: "1.0.0",
     },
   },
-  transform: jsonSchemaTransform,
 });
 
 app.register(scalar, {
@@ -54,7 +52,12 @@ app.register(categoryRoutes, {
   prefix: "/category",
 });
 
-app.listen({ port: env.PORT }, () => {
+app.listen({ port: env.PORT, host: env.HOST }, (error) => {
+  if (error) {
+    console.error("Error starting server:", error);
+    process.exit(1);
+  }
+
   console.log(`Server listening at http://localhost:${env.PORT}`);
   console.log(`Docs available at http://localhost:${env.PORT}/docs`);
 });

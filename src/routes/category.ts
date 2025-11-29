@@ -4,21 +4,65 @@ import z from "zod";
 import { prisma } from "../lib/prisma";
 import { authenticate } from "../middleware/authenticate";
 
+const paginationSchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(10),
+});
+
 export const categoryRoutes: FastifyPluginAsyncZod = async (app) => {
-  app.get("/", async (request, reply) => {
-    const categories = await prisma.category.findMany();
-    return reply.status(200).send({ categories });
-  });
+  app.get(
+    "/",
+    {
+      schema: {
+        querystring: paginationSchema,
+        response: {
+          200: {
+            categories: z.array(
+              z.object({
+                id: z.number(),
+                name: z.string(),
+                createdAt: z.date(),
+                updatedAt: z.date(),
+              })
+            ),
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { page, limit } = request.query;
+
+      const take = limit;
+      const skip = (page - 1) * limit;
+
+      const categories = await prisma.category.findMany({
+        take,
+        skip,
+      });
+
+      return reply.status(200).send({ categories });
+    }
+  );
 
   app.get(
     "/:id",
-
     {
       preHandler: [authenticate],
       schema: {
         params: z.object({
           id: z.string().transform((val) => parseInt(val, 10)),
         }),
+        response: {
+          200: {
+            category: z.object({
+              id: z.number(),
+              name: z.string(),
+              createdAt: z.date(),
+              updatedAt: z.date(),
+            }),
+          },
+          404: z.object({ message: z.string() }),
+        },
       },
     },
     async (request, reply) => {
@@ -45,6 +89,9 @@ export const categoryRoutes: FastifyPluginAsyncZod = async (app) => {
         body: z.object({
           name: z.string(),
         }),
+        response: {
+          201: z.object({}),
+        },
       },
     },
     async (request, reply) => {
@@ -71,6 +118,9 @@ export const categoryRoutes: FastifyPluginAsyncZod = async (app) => {
         body: z.object({
           name: z.string().optional(),
         }),
+        response: {
+          204: z.object({}),
+        },
       },
     },
     async (request, reply) => {
@@ -96,6 +146,9 @@ export const categoryRoutes: FastifyPluginAsyncZod = async (app) => {
         params: z.object({
           id: z.string().transform((val) => parseInt(val, 10)),
         }),
+        response: {
+          204: z.object({}),
+        },
       },
     },
     async (request, reply) => {
