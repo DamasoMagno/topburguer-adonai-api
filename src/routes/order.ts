@@ -2,18 +2,24 @@ import z from "zod";
 import { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { prisma } from "../lib/prisma";
 
-const productSchema = z.object({
+const orderSchema = z.object({
   id: z.number(),
-  name: z.string(),
-  description: z.string().nullable(),
-  price: z.number(),
-  categoryId: z.number(),
-  imageUrl: z.url().nullable(),
+  status: z.string(),
+  isCancelled: z.boolean(),
+  totalPrice: z.number(),
+  observations: z.string().nullable(),
+  orderItems: z.array(
+    z.object({
+      productId: z.number(),
+      quantity: z.number(),
+      price: z.number(),
+    })
+  ),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
 
-export const productRoutes: FastifyPluginAsyncZod = async (app) => {
+export const orderRoutes: FastifyPluginAsyncZod = async (app) => {
   app.get(
     "/",
     {
@@ -25,7 +31,7 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
         response: {
           200: z.object({
             // CORREÇÃO 1: z.object envolvendo a resposta
-            products: z.array(productSchema),
+            orders: z.array(orderSchema),
           }),
         },
       },
@@ -36,14 +42,14 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
       const take = limit;
       const skip = (page - 1) * limit;
 
-      const products = await prisma.product.findMany({
+      const orders = await prisma.order.findMany({
         select: {
           id: true,
-          name: true,
-          description: true,
-          price: true,
-          categoryId: true,
-          imageUrl: true,
+          status: true,
+          isCancelled: true,
+          totalPrice: true,
+          observations: true,
+          orderItems: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -51,7 +57,7 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
         skip,
       });
 
-      return reply.status(200).send({ products });
+      return reply.status(200).send({ orders });
     }
   );
 
@@ -64,7 +70,7 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
         }),
         response: {
           200: z.object({
-            product: productSchema,
+            order: orderSchema,
           }),
           404: z.object({ message: z.string() }),
         },
@@ -73,15 +79,16 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
     async (request, reply) => {
       const { id } = request.params;
 
-      const product = await prisma.product.findUnique({
+      const order = await prisma.order.findUnique({
         where: { id },
+        include: { orderItems: true },
       });
 
-      if (!product) {
-        return reply.status(404).send({ message: "Product not found" });
+      if (!order) {
+        return reply.status(404).send({ message: "Order not found" });
       }
 
-      return reply.status(200).send({ product });
+      return reply.status(200).send({ order });
     }
   );
 
@@ -90,11 +97,18 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         body: z.object({
-          name: z.string(),
-          description: z.string().optional(),
-          price: z.number(),
-          category_id: z.number(),
-          imageUrl: z.string().url(), // CORREÇÃO 3: z.string().url()
+          status: z.string(),
+          isCancelled: z.boolean(),
+          totalPrice: z.number(),
+          userId: z.number(),
+          observations: z.string().optional(),
+          orderItems: z.array(
+            z.object({
+              productId: z.number(),
+              quantity: z.number(),
+              price: z.number(),
+            })
+          ),
         }),
         response: {
           201: z.object({}), // Retorno vazio mas válido
@@ -102,16 +116,27 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (request, reply) => {
-      const { name, description, price, category_id, imageUrl } = request.body;
+      const {
+        status,
+        isCancelled,
+        totalPrice,
+        observations,
+        orderItems,
+        userId,
+      } = request.body;
 
-      await prisma.product.create({
+      await prisma.order.create({
         data: {
-          name,
-          description,
-          price,
-          categoryId: category_id,
-          imageUrl,
+          totalPrice,
+          status,
+          isCancelled,
+          userId,
+          observations,
+          orderItems: {
+            create: orderItems,
+          },
         },
+        select: { id: true },
       });
 
       return reply.status(201).send({});

@@ -7,6 +7,7 @@ import {
   serializerCompiler,
   validatorCompiler,
   type ZodTypeProvider,
+  jsonSchemaTransform,
 } from "fastify-type-provider-zod";
 import { env } from "./env";
 
@@ -34,6 +35,7 @@ app.register(swagger, {
       version: "1.0.0",
     },
   },
+  transform: jsonSchemaTransform,
 });
 
 app.register(scalar, {
