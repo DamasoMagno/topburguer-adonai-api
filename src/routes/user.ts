@@ -1,115 +1,56 @@
 import { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
-import { compare, hash } from "bcryptjs";
+import { UserController } from "../controller/User";
 import { z } from "zod";
 
-import { prisma } from "../lib/prisma";
+export const authSchema = z.object({
+  email: z.email(),
+  password: z.string(),
+});
+
+export const registerSchema = z.object({
+  email: z.email(),
+  password: z.string(),
+  name: z.string().optional(),
+});
+
+export const addressSchema = z.object({
+  street: z.string(),
+  city: z.string(),
+  state: z.string(),
+  zipCode: z.string(),
+  country: z.string(),
+});
+
+const userController = new UserController();
 
 export const userRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post(
     "/auth",
     {
       schema: {
-        body: z.object({
-          email: z.email(),
-          password: z.string(),
-        }),
+        body: authSchema,
       },
     },
-    async (request, reply) => {
-      const { email, password } = request.body;
-
-      const userExists = await prisma.user.findUnique({
-        where: { email },
-      });
-
-      if (!userExists) {
-        reply.status(404).send({ message: "User not found" });
-        return;
-      }
-
-      const isPasswordValid = await compare(password, userExists.password);
-
-      if (!isPasswordValid) {
-        reply.status(401).send({ message: "Invalid password" });
-        return;
-      }
-
-      const token = await reply.jwtSign({
-        sub: userExists.id,
-        name: userExists.name,
-        email: userExists.email,
-      });
-
-      return reply.status(200).send({ token });
-    }
+    userController.authenticateUser.bind(userController)
   );
 
   app.post(
     "/register",
     {
       schema: {
-        body: z.object({
-          email: z.email(),
-          password: z.string(),
-          name: z.string().optional(),
-        }),
+        body: registerSchema,
       },
     },
-    async (request, reply) => {
-      const { email, password, name } = request.body;
-
-      const userExists = await prisma.user.findUnique({
-        where: { email },
-      });
-
-      if (userExists) {
-        reply.status(400).send({ message: "User already exists" });
-        return;
-      }
-
-      const hashedPassword = await hash(password, 10);
-
-      await prisma.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-          name,
-        },
-      });
-
-      return { message: "User created" };
-    }
+    userController.createUser.bind(userController)
   );
 
   app.post(
     "/register-address",
     {
       schema: {
-        body: z.object({
-          street: z.string(),
-          city: z.string(),
-          state: z.string(),
-          zipCode: z.string(),
-          country: z.string(),
-        }),
+        body: addressSchema,
       },
     },
-    async (request, reply) => {
-      const user = request.user;
-      const { street, city, state, zipCode, country } = request.body;
-
-      await prisma.userAddress.create({
-        data: {
-          userId: user.sub,
-          street,
-          city,
-          state,
-          zipCode,
-          country,
-        },
-      });
-
-      return { message: "Address registered" };
-    }
+    userController.registerAddress.bind(userController)
   );
 };

@@ -9,6 +9,13 @@ const paginationSchema = z.object({
   limit: z.coerce.number().min(1).max(100).default(10),
 });
 
+export const categorySchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
 export const categoryRoutes: FastifyPluginAsyncZod = async (app) => {
   app.get(
     "/",
@@ -17,14 +24,7 @@ export const categoryRoutes: FastifyPluginAsyncZod = async (app) => {
         querystring: paginationSchema,
         response: {
           200: {
-            categories: z.array(
-              z.object({
-                id: z.number(),
-                name: z.string(),
-                createdAt: z.date(),
-                updatedAt: z.date(),
-              })
-            ),
+            categories: z.array(categorySchema),
           },
         },
       },
