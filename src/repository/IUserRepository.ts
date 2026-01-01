@@ -12,6 +12,7 @@ export interface Address {
 
 export interface IUserRepository {
   findById(id: string): Promise<User | null>;
+  findByEmail(email: string): Promise<User | null>;
   create(userData: User): Promise<void>;
   authenticate(email: string, password: string): Promise<string | null>;
   registerAddress(userId: string, addressData: Address): Promise<void>;

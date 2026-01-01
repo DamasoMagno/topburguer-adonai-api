@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import { prisma } from "../lib/prisma";
 import { compare } from "bcryptjs";
 import z from "zod";
-import { addressSchema, authSchema, registerSchema } from "../routes/user";
+import { addressSchema, authSchema, registerSchema } from "../schema/user";
 
 export class UserController {
   async createUser(

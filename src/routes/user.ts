@@ -1,25 +1,6 @@
 import { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { UserController } from "../controller/User";
-import { z } from "zod";
-
-export const authSchema = z.object({
-  email: z.email(),
-  password: z.string(),
-});
-
-export const registerSchema = z.object({
-  email: z.email(),
-  password: z.string(),
-  name: z.string().optional(),
-});
-
-export const addressSchema = z.object({
-  street: z.string(),
-  city: z.string(),
-  state: z.string(),
-  zipCode: z.string(),
-  country: z.string(),
-});
+import { authSchema, registerSchema, addressSchema } from "../schema/user";
 
 const userController = new UserController();
 
@@ -31,7 +12,7 @@ export const userRoutes: FastifyPluginAsyncZod = async (app) => {
         body: authSchema,
       },
     },
-    userController.authenticateUser.bind(userController)
+    userController.authenticateUser
   );
 
   app.post(
@@ -41,7 +22,7 @@ export const userRoutes: FastifyPluginAsyncZod = async (app) => {
         body: registerSchema,
       },
     },
-    userController.createUser.bind(userController)
+    userController.createUser
   );
 
   app.post(
@@ -51,6 +32,6 @@ export const userRoutes: FastifyPluginAsyncZod = async (app) => {
         body: addressSchema,
       },
     },
-    userController.registerAddress.bind(userController)
+    userController.registerAddress
   );
 };

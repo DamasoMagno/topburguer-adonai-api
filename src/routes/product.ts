@@ -1,17 +1,9 @@
 import z from "zod";
 import { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
-import { prisma } from "../lib/prisma";
+import { productSchema } from "../schema/product";
 
-const productSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  description: z.string().nullable(),
-  price: z.number(),
-  categoryId: z.number(),
-  imageUrl: z.url().nullable(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-});
+import { ProductController } from "../controller/Product";
+const productController = new ProductController();
 
 export const productRoutes: FastifyPluginAsyncZod = async (app) => {
   app.get(
@@ -24,35 +16,12 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
         }),
         response: {
           200: z.object({
-            // CORREÇÃO 1: z.object envolvendo a resposta
             products: z.array(productSchema),
           }),
         },
       },
     },
-    async (request, reply) => {
-      const { page, limit } = request.query;
-
-      const take = limit;
-      const skip = (page - 1) * limit;
-
-      const products = await prisma.product.findMany({
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          price: true,
-          categoryId: true,
-          imageUrl: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-        take,
-        skip,
-      });
-
-      return reply.status(200).send({ products });
-    }
+    productController.getProducts
   );
 
   app.get(
@@ -60,7 +29,7 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         params: z.object({
-          id: z.coerce.number(), // Dica: use z.coerce.number() ao invés de transform manual
+          id: z.coerce.number(),
         }),
         response: {
           200: z.object({
@@ -70,19 +39,7 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
         },
       },
     },
-    async (request, reply) => {
-      const { id } = request.params;
-
-      const product = await prisma.product.findUnique({
-        where: { id },
-      });
-
-      if (!product) {
-        return reply.status(404).send({ message: "Product not found" });
-      }
-
-      return reply.status(200).send({ product });
-    }
+    productController.getProduct
   );
 
   app.post(
@@ -94,28 +51,14 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
           description: z.string().optional(),
           price: z.number(),
           category_id: z.number(),
-          imageUrl: z.string().url(), // CORREÇÃO 3: z.string().url()
+          imageUrl: z.url(),
         }),
         response: {
-          201: z.object({}), // Retorno vazio mas válido
+          201: z.object({}),
         },
       },
     },
-    async (request, reply) => {
-      const { name, description, price, category_id, imageUrl } = request.body;
-
-      await prisma.product.create({
-        data: {
-          name,
-          description,
-          price,
-          categoryId: category_id,
-          imageUrl,
-        },
-      });
-
-      return reply.status(201).send({});
-    }
+    productController.createProduct
   );
 
   app.put(
@@ -137,23 +80,7 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
         },
       },
     },
-    async (request, reply) => {
-      const { id } = request.params;
-      const { name, description, price, category_id, imageUrl } = request.body;
-
-      await prisma.product.update({
-        where: { id },
-        data: {
-          name,
-          description,
-          price,
-          categoryId: category_id,
-          imageUrl,
-        },
-      });
-
-      return reply.status(204).send({});
-    }
+    productController.updateProduct
   );
 
   app.delete(
@@ -168,14 +95,6 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
         },
       },
     },
-    async (request, reply) => {
-      const { id } = request.params;
-
-      await prisma.product.delete({
-        where: { id },
-      });
-
-      return reply.status(204).send({});
-    }
+    productController.deleteProduct
   );
 };
