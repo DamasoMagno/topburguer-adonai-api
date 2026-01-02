@@ -4,12 +4,14 @@ import { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { orderSchema } from "../schema/order";
 
 import { OrderController } from "../controller/Order";
+import { authenticate } from "../middleware/authenticate";
 const orderController = new OrderController();
 
 export const orderRoutes: FastifyPluginAsyncZod = async (app) => {
   app.get(
     "/",
     {
+      preHandler: [authenticate],
       schema: {
         querystring: z.object({
           page: z.coerce.number().min(1).default(1),
@@ -28,6 +30,7 @@ export const orderRoutes: FastifyPluginAsyncZod = async (app) => {
   app.get(
     "/:id",
     {
+      preHandler: [authenticate],
       schema: {
         params: z.object({
           id: z.coerce.number(),
@@ -72,6 +75,7 @@ export const orderRoutes: FastifyPluginAsyncZod = async (app) => {
   app.delete(
     "/:id",
     {
+      preHandler: [authenticate],
       schema: {
         params: z.object({
           id: z.coerce.number(),

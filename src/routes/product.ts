@@ -3,6 +3,7 @@ import { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { productSchema } from "../schema/product";
 
 import { ProductController } from "../controller/Product";
+import { authenticate } from "../middleware/authenticate";
 const productController = new ProductController();
 
 export const productRoutes: FastifyPluginAsyncZod = async (app) => {
@@ -45,6 +46,7 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post(
     "/",
     {
+      preHandler: [authenticate],
       schema: {
         body: z.object({
           name: z.string(),
@@ -61,9 +63,10 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
     productController.createProduct
   );
 
-  app.put(
+  app.patch(
     "/:id",
     {
+      preHandler: [authenticate],
       schema: {
         params: z.object({
           id: z.coerce.number(),
@@ -86,6 +89,7 @@ export const productRoutes: FastifyPluginAsyncZod = async (app) => {
   app.delete(
     "/:id",
     {
+      preHandler: [authenticate],
       schema: {
         params: z.object({
           id: z.coerce.number(),

@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { prisma } from "../lib/prisma";
-import z from "zod";
+
 import {
   orderIdParamSchema,
   orderSchema,
@@ -8,12 +8,7 @@ import {
 } from "../schema/order";
 
 export class OrderController {
-  async createOrder(
-    request: FastifyRequest<{
-      Body: z.infer<typeof orderSchema>;
-    }>,
-    reply: FastifyReply
-  ) {
+  async createOrder(request: FastifyRequest, reply: FastifyReply) {
     const {
       status,
       isCancelled,
@@ -21,7 +16,7 @@ export class OrderController {
       observations,
       orderItems,
       userId,
-    } = request.body;
+    } = orderSchema.parse(request.body);
 
     await prisma.order.create({
       data: {
@@ -40,11 +35,8 @@ export class OrderController {
     return reply.status(201).send({});
   }
 
-  async getOrder(
-    request: FastifyRequest<{ Params: z.infer<typeof orderIdParamSchema> }>,
-    reply: FastifyReply
-  ) {
-    const { id } = request.params;
+  async getOrder(request: FastifyRequest, reply: FastifyReply) {
+    const { id } = orderIdParamSchema.parse(request.params);
 
     const order = await prisma.order.findUnique({
       where: { id },
@@ -58,11 +50,8 @@ export class OrderController {
     return reply.status(200).send({ order });
   }
 
-  async getOrders(
-    request: FastifyRequest<{ Querystring: z.infer<typeof paginationSchema> }>,
-    reply: FastifyReply
-  ) {
-    const { page, limit } = request.query;
+  async getOrders(request: FastifyRequest, reply: FastifyReply) {
+    const { page, limit } = paginationSchema.parse(request.query);
 
     const take = limit;
     const skip = (page - 1) * limit;
@@ -85,11 +74,8 @@ export class OrderController {
     return reply.status(200).send({ orders });
   }
 
-  async deleteOrder(
-    request: FastifyRequest<{ Params: z.infer<typeof orderIdParamSchema> }>,
-    reply: FastifyReply
-  ) {
-    const { id } = request.params;
+  async deleteOrder(request: FastifyRequest, reply: FastifyReply) {
+    const { id } = orderIdParamSchema.parse(request.params);
 
     await prisma.order.delete({
       where: { id },

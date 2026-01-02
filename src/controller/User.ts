@@ -1,15 +1,12 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { prisma } from "../lib/prisma";
 import { compare } from "bcryptjs";
-import z from "zod";
+
 import { addressSchema, authSchema, registerSchema } from "../schema/user";
 
 export class UserController {
-  async createUser(
-    request: FastifyRequest<{ Body: z.infer<typeof registerSchema> }>,
-    reply: FastifyReply
-  ) {
-    const { email, password } = request.body;
+  async createUser(request: FastifyRequest, reply: FastifyReply) {
+    const { email, password } = registerSchema.parse(request.body);
 
     const userExists = await prisma.user.findUnique({
       where: { email },
@@ -35,11 +32,8 @@ export class UserController {
     return reply.status(201).send({ token });
   }
 
-  async authenticateUser(
-    request: FastifyRequest<{ Body: z.infer<typeof authSchema> }>,
-    reply: FastifyReply
-  ) {
-    const { email, password } = request.body;
+  async authenticateUser(request: FastifyRequest, reply: FastifyReply) {
+    const { email, password } = authSchema.parse(request.body);
 
     const userExists = await prisma.user.findUnique({
       where: { email },
@@ -66,13 +60,11 @@ export class UserController {
     return reply.status(200).send({ token });
   }
 
-  async registerAddress(
-    request: FastifyRequest<{ Body: z.infer<typeof addressSchema> }>,
-    reply: FastifyReply
-  ) {
+  async registerAddress(request: FastifyRequest, reply: FastifyReply) {
     const user = request.user;
-    const { street, city, state, zipCode, country } = request.body;
-
+    const { street, city, state, zipCode, country } = addressSchema.parse(
+      request.body
+    );
     await prisma.userAddress.create({
       data: {
         userId: user.sub,

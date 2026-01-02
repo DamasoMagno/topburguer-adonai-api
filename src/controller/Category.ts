@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { prisma } from "../lib/prisma";
-import z from "zod";
+
 import { paginationSchema } from "../schema/order";
 import {
   categoryIdParamSchema,
@@ -9,7 +9,7 @@ import {
 
 export class CategoryController {
   async createCategory(request: FastifyRequest, reply: FastifyReply) {
-    const { name } = request.body as { name: string };
+    const { name } = createCategorySchema.parse(request.body);
 
     await prisma.category.create({
       data: {
@@ -22,7 +22,7 @@ export class CategoryController {
   }
 
   async getCategory(request: FastifyRequest, reply: FastifyReply) {
-    const { id } = request.params as { id: number };
+    const { id } = categoryIdParamSchema.parse(request.params);
 
     const category = await prisma.category.findUnique({
       where: { id },
@@ -42,7 +42,7 @@ export class CategoryController {
   }
 
   async getCategories(request: FastifyRequest, reply: FastifyReply) {
-    const { page, limit } = request.query as { page: number; limit: number };
+    const { page, limit } = paginationSchema.parse(request.query);
 
     const take = limit;
     const skip = (page - 1) * limit;
@@ -60,7 +60,7 @@ export class CategoryController {
   }
 
   async deleteCategory(request: FastifyRequest, reply: FastifyReply) {
-    const { id } = request.params as { id: number };
+    const { id } = categoryIdParamSchema.parse(request.params);
 
     await prisma.category.delete({
       where: { id },
@@ -70,8 +70,8 @@ export class CategoryController {
   }
 
   async updateCategory(request: FastifyRequest, reply: FastifyReply) {
-    const { id } = request.params as { id: number };
-    const { name } = request.body as { name: string };
+    const { id } = categoryIdParamSchema.parse(request.params);
+    const { name } = createCategorySchema.parse(request.body);
 
     await prisma.category.update({
       where: { id },
